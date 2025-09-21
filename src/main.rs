@@ -3,7 +3,8 @@ use chrono::Utc;
 use opentelemetry::global;
 use opentelemetry::trace::{TraceContextExt, TracerProvider};
 use opentelemetry::KeyValue;
-use opentelemetry_otlp::SpanExporter;
+use opentelemetry_otlp::ExportConfig;
+use opentelemetry_otlp::{SpanExporter, WithExportConfig};
 use opentelemetry_sdk::trace::SdkTracerProvider;
 use opentelemetry_sdk::Resource;
 use tracing::{info, instrument, Span};
@@ -23,8 +24,14 @@ async fn index() -> impl Responder {
 }
 
 fn init_tracer() {
+    let export_config = ExportConfig {
+        endpoint: Some("http://127.0.0.1:4317".to_string()),
+        ..Default::default()
+    };
+
     let exporter = SpanExporter::builder()
         .with_tonic()
+        .with_export_config(export_config)
         .build()
         .expect("failed to build OTLP exporter");
 
