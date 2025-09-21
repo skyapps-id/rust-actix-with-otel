@@ -74,7 +74,6 @@ where
     ) -> std::fmt::Result {
         let meta = event.metadata();
 
-        // Ambil trace_id & span_id
         let span = Span::current();
         let ctx_otel = span.context();
         let span_ref = ctx_otel.span();
