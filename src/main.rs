@@ -2,8 +2,10 @@ use actix_web::{get, App, HttpServer, Responder};
 use chrono::Utc;
 use opentelemetry::global;
 use opentelemetry::trace::{TraceContextExt, TracerProvider};
+use opentelemetry::KeyValue;
 use opentelemetry_otlp::SpanExporter;
 use opentelemetry_sdk::trace::SdkTracerProvider;
+use opentelemetry_sdk::Resource;
 use tracing::{info, instrument, Span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 use tracing_subscriber::{
@@ -26,8 +28,13 @@ fn init_tracer() {
         .build()
         .expect("failed to build OTLP exporter");
 
+    let resource = Resource::builder()
+        .with_attributes(vec![KeyValue::new("service.name", "my_actix_service")])
+        .build();
+
     let provider = SdkTracerProvider::builder()
         .with_simple_exporter(exporter)
+        .with_resource(resource)
         .build();
 
     let tracer = provider.tracer("actix_tracer");
