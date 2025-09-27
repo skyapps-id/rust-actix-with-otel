@@ -50,7 +50,6 @@ fn init_tracer() {
     let otel_layer = tracing_opentelemetry::layer::<Registry>().with_tracer(tracer);
 
     let fmt_layer = fmt::layer().event_format(CustomJson);
-    // let fmt_layer = fmt::layer().json();
 
     tracing_subscriber::registry()
         .with(otel_layer)
@@ -78,14 +77,20 @@ where
         let ctx_otel = span.context();
         let span_ref = ctx_otel.span();
         let span_ctx = span_ref.span_context();
-
         let trace_id = span_ctx.trace_id();
         let span_id = span_ctx.span_id();
 
         let mut msg_buf = String::new();
-        let formatter = fmt::format().with_target(false);
+        let formatter = fmt::format().with_target(false).without_time();
         let writer_buf = fmt::format::Writer::new(&mut msg_buf);
         formatter.format_event(ctx, writer_buf, event)?;
+        let message = msg_buf.trim();
+
+        let span_name = if let Some(scope) = ctx.lookup_current() {
+            scope.metadata().name().to_string()
+        } else {
+            "".to_string()
+        };
 
         write!(writer, "{{")?;
         write!(writer, "\"timestamp\":\"{}\"", Utc::now().to_rfc3339())?;
@@ -98,12 +103,14 @@ where
             write!(writer, ",\"span_id\":\"{}\"", span_id)?;
         }
 
-        write!(writer, ",\"message\":\"{}\"", msg_buf.trim())?;
+        write!(writer, ",\"fields\":{{\"message\":\"{}\"}}", message)?;
+        write!(writer, ",\"span\":{{\"name\":\"{}\"}}", span_name)?;
         write!(writer, "}}\n")?;
 
         Ok(())
     }
 }
+
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
