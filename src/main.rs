@@ -3,8 +3,9 @@ mod models;
 mod services;
 mod telemetry;
 
-use actix_web::{middleware::Logger, App, HttpServer};
-use actix_web_opentelemetry::RequestTracing;
+use actix_web::{App, HttpServer};
+use tracing_actix_web::TracingLogger;
+use opentelemetry_instrumentation_actix_web::RequestTracing;
 use handlers::{index::index, todo::todo_handler};
 
 #[actix_web::main]
@@ -13,7 +14,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         App::new()
-            .wrap(Logger::default())
+            .wrap(TracingLogger::default())
             .wrap(RequestTracing::new())
             .service(index)
             .service(todo_handler)
